@@ -2,13 +2,22 @@
 #include "InspectorSettingsBlock.h"
 #include "InspectorTreeView.h"
 #include "InspectorDetailsBlock.h"
+#include "InspectorPackageBlock.h"
+
+#include "ContentBrowserModule.h"
+#include "IContentBrowserSingleton.h"
 
 #include "Widgets/Layout/SSplitter.h"
+
+SInspectorGeneralWindow::~SInspectorGeneralWindow()
+{
+	
+}
 
 void SInspectorGeneralWindow::Construct(const FArguments& InArgs)
 {
 	RebuildLayout();
-	
+	BindToContentBrowser();
 }
 
 void SInspectorGeneralWindow::RebuildLayout()
@@ -24,13 +33,19 @@ void SInspectorGeneralWindow::RebuildLayout()
 		]
 
 		+ SSplitter::Slot()
-		.Value(0.45f)
+		.Value(0.25f)
+		[
+			SAssignNew(PackageBlock, SInspectorPackageBlock)
+		]
+
+		+ SSplitter::Slot()
+		.Value(0.25f)
 		[
 			SAssignNew(TreeBlock, SInspectorTreeView)
 		]
 
 		+ SSplitter::Slot()
-		.Value(0.30f)
+		.Value(0.25f)
 		[
 			SAssignNew(DetailsBlock, SInspectorDetailsBlock)
 		]
@@ -38,17 +53,63 @@ void SInspectorGeneralWindow::RebuildLayout()
 
 	SettingsBlock->OnSettingsChanged.BindLambda(
 [this](bool bAll, bool bTransient, bool bEdit)
-{
-	//TreeBlock->SetMode(bAll, bTransient);
-	DetailsBlock->SetEditingEnabled(bEdit);
-});
+		{
+			//TreeBlock->SetMode(bAll, bTransient);
+			DetailsBlock->SetEditingEnabled(bEdit);
+		});
 
 	TreeBlock->OnObjectSelected.BindLambda(
 [this](UObject* Obj)
+		{
+			if (DetailsBlock)
+			{
+				DetailsBlock->SetObject(Obj);
+			}
+		});
+
+	PackageBlock->OnObjectSelected.BindLambda(
+[this](UObject* Obj)
+		{
+			if (TreeBlock)
+			{
+				TreeBlock->SetRootObject(Obj);
+			}
+		});
+}
+
+void SInspectorGeneralWindow::BindToContentBrowser()
 {
-	if (DetailsBlock)
-	{
-		DetailsBlock->SetObject(Obj);
-	}
-});
+	FContentBrowserModule& CBModule =
+	FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+
+	ContentBrowserHandle = CBModule.GetOnAssetSelectionChanged().AddRaw(
+		this,
+		&SInspectorGeneralWindow::OnAssetSelectionChanged
+	);
+}
+
+void SInspectorGeneralWindow::UnbindFromContentBrowser()
+{
+	FContentBrowserModule& CBModule =
+	FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+
+	CBModule.GetOnAssetSelectionChanged().Remove(ContentBrowserHandle);
+}
+
+void SInspectorGeneralWindow::OnAssetSelectionChanged(
+	const TArray<FAssetData>& SelectedAssets,
+	bool bIsPrimary)
+{
+	if (SelectedAssets.Num() == 0)
+		return;
+
+	UObject* Asset = SelectedAssets[0].GetAsset();
+	if (!Asset)
+		return;
+
+	UPackage* Package = Asset->GetPackage();
+	if (!Package)
+		return;
+	
+	if (TreeBlock) TreeBlock->SetRootObject(Package);
 }

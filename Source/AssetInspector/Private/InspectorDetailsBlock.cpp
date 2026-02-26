@@ -8,11 +8,19 @@ void SInspectorDetailsBlock::Construct(const FArguments& InArgs)
 		FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 
 	FDetailsViewArgs Args;
-	Args.bAllowSearch = true;
+	
 	Args.bLockable = false;
 	Args.bUpdatesFromSelection = false;
-	Args.bHideSelectionTip = true;
+	Args.bAllowSearch = true;
 	Args.bShowOptions = true;
+	Args.bShowScrollBar = true;
+	Args.bShowPropertyMatrixButton = true;
+	Args.NameAreaSettings = FDetailsViewArgs::ObjectsUseNameArea;
+	Args.DefaultsOnlyVisibility = EEditDefaultsOnlyNodeVisibility::Automatic;
+	Args.bForceHiddenPropertyVisibility = true;
+	Args.bShowHiddenPropertiesWhilePlayingOption = true;
+	Args.bAllowFavoriteSystem = true;
+	Args.bShowModifiedPropertiesOption = true;
 
 	DetailsView = PropModule.CreateDetailView(Args);
 
