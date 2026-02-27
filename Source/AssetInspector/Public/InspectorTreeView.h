@@ -17,8 +17,15 @@ public:
 	FOnObjectSelected OnObjectSelected;
 	
 	void Construct(const FArguments& InArgs);
-	void SetRootObject(UObject* RootObject);
 	virtual ~SInspectorTreeView();
+
+	void AddRootObjects(const TArray<UObject*>& RootObjects, bool ClearRoot = false);
+	inline void AddRootObject(UObject* RootObject, bool ClearRoot = false) { AddRootObjects({RootObject}, ClearRoot); }
+	inline void SetRootObjects(const TArray<UObject*>& RootObjects) { AddRootObjects(RootObjects, true); }
+	inline void SetRootObject(UObject* RootObject) { AddRootObjects({RootObject}, true); }
+	
+	void RemoveRootObjects(const TArray<UObject*>& RootObject);
+	inline void RemoveRootObject(UObject* RootObject) { RemoveRootObjects({RootObject}); }
 
 private:
 
@@ -92,7 +99,6 @@ private:
 
 	TMap<FNodePtr, TSet<FNodePtr>> ChildrenMap;
 	
-	void BuildTreeFromObject(UObject* RootObject);
 	void ExtractPackageObjects(UObject* RootObject, FNodePtr RootNode, uint8_t depth = 0);
 	
 	TSharedRef<ITableRow> OnGenerateRow(FNodePtr Item, const TSharedRef<STableViewBase>& OwnerTable);

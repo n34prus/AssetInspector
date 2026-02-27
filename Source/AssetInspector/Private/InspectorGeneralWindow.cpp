@@ -11,7 +11,7 @@
 
 SInspectorGeneralWindow::~SInspectorGeneralWindow()
 {
-	
+	UnbindFromContentBrowser();
 }
 
 void SInspectorGeneralWindow::Construct(const FArguments& InArgs)
@@ -100,16 +100,18 @@ void SInspectorGeneralWindow::OnAssetSelectionChanged(
 	const TArray<FAssetData>& SelectedAssets,
 	bool bIsPrimary)
 {
-	if (SelectedAssets.Num() == 0)
-		return;
+	if (!SelectedAssets.Num() || !TreeBlock) return;
 
-	UObject* Asset = SelectedAssets[0].GetAsset();
-	if (!Asset)
-		return;
-
-	UPackage* Package = Asset->GetPackage();
-	if (!Package)
-		return;
+	TArray<UObject*> RootObjects;
 	
-	if (TreeBlock) TreeBlock->SetRootObject(Package);
+	for (auto AssetData : SelectedAssets)
+	{
+		UObject* Asset = AssetData.GetAsset();	// immediate loading
+		if (!Asset) continue;
+		UPackage* Package = Asset->GetPackage();
+		if (!Package) continue;
+		RootObjects.Add(Package);
+	}
+	
+	TreeBlock->SetRootObjects(RootObjects);
 }

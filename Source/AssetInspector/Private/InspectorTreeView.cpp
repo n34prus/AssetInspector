@@ -27,25 +27,31 @@ void SInspectorTreeView::Construct(const FArguments& InArgs)
 	];
 }
 
-void SInspectorTreeView::SetRootObject(UObject* RootObject)
-{
-	BuildTreeFromObject(RootObject);
-}
-
 SInspectorTreeView::~SInspectorTreeView()
 {
 }
 
-void SInspectorTreeView::BuildTreeFromObject(UObject* RootObject)
+void SInspectorTreeView::AddRootObjects(const TArray<UObject*>& RootObjects, bool ClearRoot)
 {
-	RootItems.Empty();
-	ChildrenMap.Empty();
-	
-	FNodePtr RootNode (RootObject);
-	RootItems.Add(RootNode);
+	if (ClearRoot)
+	{
+		RootItems.Empty();
+		ChildrenMap.Empty();
+	}
+	for (UObject* Obj : RootObjects)
+	{
+		if (RootItems.Contains(Obj)) continue;
+		FNodePtr RootNode (Obj);
+		RootItems.Add(RootNode);
+		ExtractPackageObjects(Obj, RootNode, 1);
+	}
+	TreeViewWidget->RequestTreeRefresh();
+}
 
-	ExtractPackageObjects(RootObject, RootNode, 1);
-
+void SInspectorTreeView::RemoveRootObjects(const TArray<UObject*>& RootObject)
+{
+	for (UObject* Obj : RootObject)
+		if (RootItems.Contains(Obj)) RootItems.Remove(Obj);
 	TreeViewWidget->RequestTreeRefresh();
 }
 
