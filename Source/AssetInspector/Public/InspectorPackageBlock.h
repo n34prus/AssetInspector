@@ -6,30 +6,31 @@
 #include "UObject/Package.h"
 #include "InspectorCore.h"
 
-class SInspectorPackageRow : public SMultiColumnTableRow<TWeakObjectPtr<UPackage>>
+struct FPackageTreeNode
+{
+	FString Name;
+	FString FullPath;
+	TWeakObjectPtr<UPackage> Package; // null for folder
+	TArray<TSharedPtr<FPackageTreeNode>> Children;
+
+	bool IsFolder() const { return !Package.IsValid(); }
+};
+
+using FInspectPackagePtr = TSharedPtr<FPackageTreeNode>;
+
+class SInspectorPackageRow : public SMultiColumnTableRow<FInspectPackagePtr>
 {
 public:
-	SLATE_BEGIN_ARGS(SInspectorPackageRow) {}
-	SLATE_ARGUMENT(TWeakObjectPtr<UPackage>, Item)
-SLATE_END_ARGS()
+    SLATE_BEGIN_ARGS(SInspectorPackageRow) {}
+	SLATE_ARGUMENT(FInspectPackagePtr, Item)
+    SLATE_END_ARGS()
 
-void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTable);
-
-	virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& ColumnName) override;
+    void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTable);
+    virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& ColumnName) override;
 
 private:
-	TWeakObjectPtr<UPackage> Package;
-	const TMap <FName, FString> ShortNames
-	{
-		{ "Transient",            "TR"  },
-		{ "PlayInEditor",         "PIE" },
-		{ "CompiledIn",           "CI"  },
-		{ "EditorOnly",           "EO"  },
-		{ "FilterEditorOnly",     "FEO" },
-		{ "ContainsMapData",      "CMD" },
-		{ "RuntimeGenerated",     "RG"  },
-		{ "Cooked",               "CK"  }
-	};
+	
+    FInspectPackagePtr Item;
 };
 
 class SInspectorPackageBlock : public SCompoundWidget
@@ -38,19 +39,21 @@ public:
 	SLATE_BEGIN_ARGS(SInspectorPackageBlock) {}
 	SLATE_END_ARGS()
 
-	FOnObjectSelected OnObjectSelected;
+	FOnMultipleObjectsSelected OnMultipleObjectsSelected;
+
 	
 	void Construct(const FArguments& InArgs);
-
 	void UpdatePackages();
 
 private:
-	TSharedRef<ITableRow> OnGenerateRow(TWeakObjectPtr<UPackage> Item,
-		const TSharedRef<STableViewBase>& OwnerTable);
+	
+	void OnSelectionChanged(FInspectPackagePtr Item,	ESelectInfo::Type SelectInfo);
+	void OnGetChildren(FInspectPackagePtr InItem,	TArray<FInspectPackagePtr>& OutChildren);
+	TSharedRef<ITableRow> OnGenerateRow(FInspectPackagePtr Item, const TSharedRef<STableViewBase>& OwnerTable);
+	void CollectPackagesRecursive(const FInspectPackagePtr& Node,	TArray<UObject*>& Out);
+	void SortTree(TArray<FInspectPackagePtr>& Nodes);
 
-	void OnSelectionChanged(TWeakObjectPtr<UPackage> Package, ESelectInfo::Type SelectInfo);
 
-private:
-	TSharedPtr<SListView<TWeakObjectPtr<UPackage>>> ListView;
-	TArray<TWeakObjectPtr<UPackage>> Packages;
+	TSharedPtr<STreeView<FInspectPackagePtr>> TreeView;
+	TArray<FInspectPackagePtr> RootNodes;
 };

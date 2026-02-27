@@ -12,7 +12,7 @@ void SInspectorTreeView::Construct(const FArguments& InArgs)
 {
 	ChildSlot
 	[
-		SAssignNew(TreeViewWidget, STreeView<FNodePtr>)
+		SAssignNew(TreeViewWidget, STreeView<FInspectObjectPtr>)
 		.TreeItemsSource(&RootItems)
 		.OnGenerateRow(this, &SInspectorTreeView::OnGenerateRow)
 		.OnGetChildren(this, &SInspectorTreeView::OnGetChildren)
@@ -41,7 +41,7 @@ void SInspectorTreeView::AddRootObjects(const TArray<UObject*>& RootObjects, boo
 	for (UObject* Obj : RootObjects)
 	{
 		if (RootItems.Contains(Obj)) continue;
-		FNodePtr RootNode (Obj);
+		FInspectObjectPtr RootNode (Obj);
 		RootItems.Add(RootNode);
 		ExtractPackageObjects(Obj, RootNode, 1);
 	}
@@ -55,7 +55,7 @@ void SInspectorTreeView::RemoveRootObjects(const TArray<UObject*>& RootObject)
 	TreeViewWidget->RequestTreeRefresh();
 }
 
-void SInspectorTreeView::ExtractPackageObjects(UObject* RootObject, FNodePtr RootNode, uint8_t depth)
+void SInspectorTreeView::ExtractPackageObjects(UObject* RootObject, FInspectObjectPtr RootNode, uint8_t depth)
 {
 	if (!RootObject) return;
 	TArray<UObject*> Objects;
@@ -63,7 +63,7 @@ void SInspectorTreeView::ExtractPackageObjects(UObject* RootObject, FNodePtr Roo
 
 	for (UObject* Obj : Objects)
 	{
-		FNodePtr Node (Obj);
+		FInspectObjectPtr Node (Obj);
 		
 		ChildrenMap.FindOrAdd(RootNode).Add(Node);
 
@@ -72,7 +72,7 @@ void SInspectorTreeView::ExtractPackageObjects(UObject* RootObject, FNodePtr Roo
 }
 
 TSharedRef<ITableRow> SInspectorTreeView::OnGenerateRow(
-	FNodePtr Item,
+	FInspectObjectPtr Item,
 	const TSharedRef<STableViewBase>& OwnerTable)
 {
 	/*
@@ -89,12 +89,12 @@ TSharedRef<ITableRow> SInspectorTreeView::OnGenerateRow(
 		SNew(STextBlock).Text(FText::FromString(Label))
 	];
 	*/
-	return SNew(SInspectorRow, OwnerTable).Item(Item);
+	return SNew(SInspectorObjectRow, OwnerTable).Item(Item);
 }
 
 void SInspectorTreeView::OnGetChildren(
-	FNodePtr Item,
-	TArray<FNodePtr>& OutChildren)
+	FInspectObjectPtr Item,
+	TArray<FInspectObjectPtr>& OutChildren)
 {
 	if (ChildrenMap.Contains(Item))
 	{
@@ -105,7 +105,7 @@ void SInspectorTreeView::OnGetChildren(
 }
 
 void SInspectorTreeView::OnSelectionChanged(
-	FNodePtr Item,
+	FInspectObjectPtr Item,
 	ESelectInfo::Type SelectInfo)
 {
 	UObject* Selected = Item.IsValid()

@@ -24,7 +24,7 @@ private:
 	TSharedPtr<SInspectorPackageBlock>  PackageBlock;
 	TSharedPtr<SInspectorTreeView>      TreeBlock;
 	TSharedPtr<SInspectorDetailsBlock>  DetailsBlock;
-
+	
 	FDelegateHandle ContentBrowserHandle;
 
 	void BindToContentBrowser();

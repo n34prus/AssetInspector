@@ -1,141 +1,254 @@
 ﻿#include "InspectorPackageBlock.h"
 #include "Widgets/Text/STextBlock.h"
-//#include "AssetRegistry/AssetRegistryModule.h"
 
 void SInspectorPackageRow::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTable)
 {
-    Package = InArgs._Item;
+    Item = InArgs._Item;
 
-    SMultiColumnTableRow<TWeakObjectPtr<UPackage>>::Construct(
-        SMultiColumnTableRow<TWeakObjectPtr<UPackage>>::FArguments(),
+    SMultiColumnTableRow<FInspectPackagePtr>::Construct(
+        SMultiColumnTableRow<FInspectPackagePtr>::FArguments(),
         OwnerTable);
 }
 
 TSharedRef<SWidget> SInspectorPackageRow::GenerateWidgetForColumn(const FName& ColumnName)
 {
-    if (!Package.IsValid())
+    if (!Item.IsValid())
     {
-        return SNew(STextBlock).Text(FText::FromString(TEXT("-")));
+        return SNew(STextBlock).Text(FText::FromString("-"));
     }
-
-    const uint32 Flags = Package->GetPackageFlags();
-    const bool bHasFlag =
-        (ColumnName == "Transient" && (Flags & RF_Transient)) ||
-        (ColumnName == "PlayInEditor" && (Flags & PKG_PlayInEditor)) ||
-        (ColumnName == "CompiledIn" && (Flags & PKG_CompiledIn)) ||
-        (ColumnName == "EditorOnly" && (Flags & PKG_EditorOnly)) ||
-        (ColumnName == "FilterEditorOnly" && (Flags & PKG_FilterEditorOnly)) ||
-        (ColumnName == "ContainsMapData" && (Flags & PKG_ContainsMapData)) ||
-        (ColumnName == "RuntimeGenerated" && (Flags & PKG_RuntimeGenerated)) ||
-        (ColumnName == "Cooked" && (Flags & PKG_Cooked));
-
-    if (ColumnName == "Package")
+    	
+    if (ColumnName == "Path")
     {
-        return SNew(STextBlock)
-            .Text(FText::FromString(Package->GetName()));
+        return SNew(SHorizontalBox)
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            [
+                SNew(SExpanderArrow, SharedThis(this))
+            ]
+            + SHorizontalBox::Slot()
+            .FillWidth(1.f)
+            [
+                SNew(STextBlock).Text(FText::FromString(Item->Name))
+            ];
     }
-
-    if (bHasFlag)
+    	
+    if (ColumnName == "Flags")
     {
-        if (const FString* Short = ShortNames.Find(ColumnName))
+        if (Item->Package.IsValid())
         {
-            return SNew(STextBlock).Text(FText::FromString(*Short));
+            uint32 Flags = Item->Package->GetPackageFlags();
+
+            FString Out;
+            if (Flags & RF_Transient)          Out += "TR ";
+            if (Flags & PKG_PlayInEditor)      Out += "PIE ";
+            if (Flags & PKG_CompiledIn)         Out += "CI ";
+            if (Flags & PKG_EditorOnly)         Out += "EO ";
+            if (Flags & PKG_FilterEditorOnly)   Out += "FEO ";
+            if (Flags & PKG_ContainsMapData)    Out += "CMD ";
+            if (Flags & PKG_RuntimeGenerated)   Out += "RG ";
+            if (Flags & PKG_Cooked)             Out += "CK ";
+
+            return SNew(STextBlock)
+                .Text(FText::FromString(Out.IsEmpty() ? "-" : Out));
         }
-        return SNew(STextBlock).Text(FText::FromString("X"));
+
+        return SNew(STextBlock).Text(FText::FromString(" "));
     }
-    return SNew(STextBlock).Text(FText::FromString(" "));
+
+    return SNew(STextBlock).Text(FText::FromString("-"));
 }
 
 void SInspectorPackageBlock::Construct(const FArguments& InArgs)
 {
-    ListView = SNew(SListView<TWeakObjectPtr<UPackage>>)
-        .ListItemsSource(&Packages)
+    TreeView = SNew(STreeView<FInspectPackagePtr>)
+        .TreeItemsSource(&RootNodes)
         .OnGenerateRow(this, &SInspectorPackageBlock::OnGenerateRow)
+        .OnGetChildren(this, &SInspectorPackageBlock::OnGetChildren)
+        .SelectionMode(ESelectionMode::Multi)
         .OnSelectionChanged(this, &SInspectorPackageBlock::OnSelectionChanged)
         .HeaderRow
         (
             SNew(SHeaderRow)
-            + SHeaderRow::Column("Package").DefaultLabel(FText::FromString("Package"))
-            + SHeaderRow::Column("Transient").DefaultLabel(FText::FromString("Transient"))
-            + SHeaderRow::Column("PlayInEditor").DefaultLabel(FText::FromString("PIE"))
-            + SHeaderRow::Column("CompiledIn").DefaultLabel(FText::FromString("CompiledIn"))
-            + SHeaderRow::Column("EditorOnly").DefaultLabel(FText::FromString("EditorOnly"))
-            + SHeaderRow::Column("FilterEditorOnly").DefaultLabel(FText::FromString("FilterEditorOnly"))
-            + SHeaderRow::Column("ContainsMapData").DefaultLabel(FText::FromString("ContainsMapData"))
-            + SHeaderRow::Column("RuntimeGenerated").DefaultLabel(FText::FromString("RuntimeGenerated"))
-            + SHeaderRow::Column("Cooked").DefaultLabel(FText::FromString("Cooked"))
+            + SHeaderRow::Column("Path").DefaultLabel(FText::FromString("Path"))
+            + SHeaderRow::Column("Flags").DefaultLabel(FText::FromString("Flags"))
         );
-
+    
     ChildSlot
     [
-        ListView.ToSharedRef()
+        TreeView.ToSharedRef()
     ];
 
     UpdatePackages();
 }
 
-TSharedRef<ITableRow> SInspectorPackageBlock::OnGenerateRow(
-    TWeakObjectPtr<UPackage> Item,
+void SInspectorPackageBlock::UpdatePackages()
+{
+    RootNodes.Empty();
+
+    TMap<FString, FInspectPackagePtr> FolderMap;
+
+    for (TObjectIterator<UPackage> It; It; ++It)
+    {
+        UPackage* Package = *It;
+        if (!Package)
+            continue;
+
+        FString Path = Package->GetPathName(); 
+
+        TArray<FString> Parts;
+        Path.ParseIntoArray(Parts, TEXT("/"), true);
+
+        if (Parts.Num() == 0)
+            continue;
+
+        FInspectPackagePtr CurrentParent = nullptr;
+        FString CurrentPath;
+
+        // create folders
+        for (int32 i = 0; i < Parts.Num() - 1; ++i)
+        {
+            if (CurrentPath.IsEmpty())
+                CurrentPath = "/" + Parts[i];
+            else
+                CurrentPath += "/" + Parts[i];
+
+            FInspectPackagePtr* ExistingNode = FolderMap.Find(CurrentPath);
+
+            if (!ExistingNode)
+            {
+                FInspectPackagePtr NewFolder = MakeShared<FPackageTreeNode>();
+                NewFolder->Name = "/" + Parts[i];
+                NewFolder->FullPath = CurrentPath;
+
+                FolderMap.Add(CurrentPath, NewFolder);
+
+                if (CurrentParent.IsValid())
+                {
+                    CurrentParent->Children.Add(NewFolder);
+                }
+                else
+                {
+                    RootNodes.Add(NewFolder);
+                }
+
+                CurrentParent = NewFolder;
+            }
+            else
+            {
+                CurrentParent = *ExistingNode;
+            }
+        }
+
+        // create node
+        FInspectPackagePtr PackageNode = MakeShared<FPackageTreeNode>();
+        PackageNode->Name = Parts.Last();
+        PackageNode->FullPath = Path;
+        PackageNode->Package = Package;
+
+        if (CurrentParent.IsValid())
+        {
+            CurrentParent->Children.Add(PackageNode);
+        }
+        else
+        {
+            RootNodes.Add(PackageNode);
+        }
+    }
+
+    // sort packages to top, folders to bottom
+    SortTree(RootNodes);
+    if (TreeView.IsValid())
+    {
+        TreeView->RequestTreeRefresh();
+    }
+}
+
+void SInspectorPackageBlock::OnSelectionChanged(FInspectPackagePtr Item, ESelectInfo::Type SelectInfo)
+{
+    TArray<FInspectPackagePtr> Selected;
+    TreeView->GetSelectedItems(Selected);
+
+    TArray<UObject*> SelectedObjects;
+
+    for (auto& Node : Selected)
+    {
+        if (!Node.IsValid())
+            continue;
+
+        if (Node->IsFolder())
+        {
+            CollectPackagesRecursive(Node, SelectedObjects);
+        }
+        else if (Node->Package.IsValid())
+        {
+            SelectedObjects.Add(Node->Package.Get());
+        }
+    }
+
+    if (OnMultipleObjectsSelected.IsBound())
+    {
+        OnMultipleObjectsSelected.Execute(SelectedObjects);
+    }
+}
+
+void SInspectorPackageBlock::OnGetChildren(FInspectPackagePtr InItem,
+    TArray<FInspectPackagePtr>& OutChildren)
+{
+    OutChildren = InItem->Children;
+}
+
+TSharedRef<ITableRow> SInspectorPackageBlock::OnGenerateRow(FInspectPackagePtr Item,
     const TSharedRef<STableViewBase>& OwnerTable)
 {
     return SNew(SInspectorPackageRow, OwnerTable)
         .Item(Item);
 }
 
-void SInspectorPackageBlock::OnSelectionChanged(TWeakObjectPtr<UPackage> Package, ESelectInfo::Type SelectInfo)
+void SInspectorPackageBlock::CollectPackagesRecursive(const FInspectPackagePtr& Node, TArray<UObject*>& Out)
 {
-    if (!Package.IsValid())
+    if (!Node.IsValid())
         return;
 
-    UPackage* SelectedPackage = Package.Get();
-    
-    if (OnObjectSelected.IsBound())
+    if (Node->Package.IsValid())
     {
-        OnObjectSelected.Execute(SelectedPackage);
+        UObject* Obj = Node->Package.Get();
+        if (Obj)
+        {
+            Out.Add(Obj);
+        }
+    }
+
+    for (const auto& Child : Node->Children)
+    {
+        CollectPackagesRecursive(Child, Out);
     }
 }
 
-void SInspectorPackageBlock::UpdatePackages()
+void SInspectorPackageBlock::SortTree(TArray<FInspectPackagePtr>& Nodes)
 {
-    Packages.Empty();
-
-    /*
-    FAssetRegistryModule& AssetRegistryModule =
-        FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-
-    IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-
-    TArray<FAssetData> Assets;
-    AssetRegistry.GetAllAssets(Assets, true);
-
-    TSet<FName> UniquePackages;
-
-    for (const FAssetData& Asset : Assets)
+    Nodes.Sort([](const FInspectPackagePtr& A,
+                  const FInspectPackagePtr& B)
     {
-        UniquePackages.Add(Asset.PackageName);
-    }
-    */
-    //for (const FName& PackageName : UniquePackages)
-    for (TObjectIterator<UPackage> It; It; ++It)
-    {
-        //UPackage* Package = FindPackage(nullptr, *PackageName.ToString());
-        UPackage* Package = *It;
+        const bool AFolder = A.IsValid() && A->IsFolder();
+        const bool BFolder = B.IsValid() && B->IsFolder();
 
-        /*
-        if (!Package)
+        // packages to top over folders
+        if (AFolder != BFolder)
         {
-            Package = LoadPackage(nullptr, *PackageName.ToString(), LOAD_None);
+            return !AFolder && BFolder;
         }
-        */
+			
+        FString AName = A.IsValid() ? A->Name : FString();
+        FString BName = B.IsValid() ? B->Name : FString();
 
-        if (Package)
-        {
-            Packages.Add(Package);
-        }
-    }
+        return AName < BName;
+    });
 
-    if (ListView.IsValid())
+    for (auto& Node : Nodes)
     {
-        ListView->RequestListRefresh();
+        if (Node.IsValid())
+        {
+            SortTree(Node->Children);
+        }
     }
 }

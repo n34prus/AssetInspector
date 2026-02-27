@@ -67,12 +67,12 @@ void SInspectorGeneralWindow::RebuildLayout()
 			}
 		});
 
-	PackageBlock->OnObjectSelected.BindLambda(
-[this](UObject* Obj)
+	PackageBlock->OnMultipleObjectsSelected.BindLambda(
+[this](const TArray<UObject*>& ObjArr)
 		{
 			if (TreeBlock)
 			{
-				TreeBlock->SetRootObject(Obj);
+				TreeBlock->SetRootObjects(ObjArr);
 			}
 		});
 }
