@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class AssetInspector : ModuleRules
+public class PackageInspector : ModuleRules
 {
-	public AssetInspector(ReadOnlyTargetRules Target) : base(Target)
+	public PackageInspector(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 

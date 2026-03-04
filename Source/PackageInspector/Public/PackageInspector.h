@@ -4,7 +4,7 @@
 
 #include "Modules/ModuleManager.h"
 
-class FAssetInspectorModule : public IModuleInterface
+class FPackageInspectorModule : public IModuleInterface
 {
 public:
 

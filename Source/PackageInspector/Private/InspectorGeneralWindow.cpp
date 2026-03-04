@@ -1,6 +1,6 @@
 ﻿#include "InspectorGeneralWindow.h"
 #include "InspectorSettingsBlock.h"
-#include "InspectorTreeView.h"
+#include "InspectorObjectBlock.h"
 #include "InspectorDetailsBlock.h"
 #include "InspectorPackageBlock.h"
 
@@ -41,7 +41,7 @@ void SInspectorGeneralWindow::RebuildLayout()
 		+ SSplitter::Slot()
 		.Value(0.25f)
 		[
-			SAssignNew(TreeBlock, SInspectorTreeView)
+			SAssignNew(TreeBlock, SInspectorObjectBlock)
 		]
 
 		+ SSplitter::Slot()

@@ -4,7 +4,7 @@
 #include "Widgets/SCompoundWidget.h"
 
 class SInspectorSettingsBlock;
-class SInspectorTreeView;
+class SInspectorObjectBlock;
 class SInspectorDetailsBlock;
 class SInspectorPackageBlock;
 
@@ -22,7 +22,7 @@ private:
 	
 	TSharedPtr<SInspectorSettingsBlock> SettingsBlock;
 	TSharedPtr<SInspectorPackageBlock>  PackageBlock;
-	TSharedPtr<SInspectorTreeView>      TreeBlock;
+	TSharedPtr<SInspectorObjectBlock>      TreeBlock;
 	TSharedPtr<SInspectorDetailsBlock>  DetailsBlock;
 	
 	FDelegateHandle ContentBrowserHandle;

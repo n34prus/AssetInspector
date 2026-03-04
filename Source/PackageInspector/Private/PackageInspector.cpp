@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "AssetInspector.h"
+#include "PackageInspector.h"
 
 #include "ToolMenus.h"
 #include "InspectorGeneralWindow.h"
@@ -8,17 +8,17 @@
 #include "Widgets/Docking/SDockTab.h"
 #include "Framework/Docking/TabManager.h"
 
-#define LOCTEXT_NAMESPACE "FAssetInspectorModule"
+#define LOCTEXT_NAMESPACE "FPackageInspectorModule"
 
-static const FName AssetInspectorTabName("AssetInspector");
+static const FName PackageInspectorTabName("PackageInspector");
 
-void FAssetInspectorModule::StartupModule()
+void FPackageInspectorModule::StartupModule()
 {
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
-		AssetInspectorTabName,
-		FOnSpawnTab::CreateRaw(this, &FAssetInspectorModule::OnSpawnPluginTab)
+		PackageInspectorTabName,
+		FOnSpawnTab::CreateRaw(this, &FPackageInspectorModule::OnSpawnPluginTab)
 	)
-	.SetDisplayName(FText::FromString("Asset Inspector"))
+	.SetDisplayName(FText::FromString("Package Inspector"))
 	.SetMenuType(ETabSpawnerMenuType::Hidden);
 
 	UToolMenus::RegisterStartupCallback(
@@ -28,29 +28,29 @@ void FAssetInspectorModule::StartupModule()
 			UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
 
 		FToolMenuSection& Section =
-			Menu->AddSection("AssetInspector");
+			Menu->AddSection("PackageInspector");
 
 		Section.AddMenuEntry(
 			"OpenAssetInspector",
-			FText::FromString("Asset Inspector"),
-			FText::FromString("Open Asset Inspector"),
+			FText::FromString("Package Inspector"),
+			FText::FromString("Open Package Inspector"),
 			FSlateIcon(),
 			FUIAction(FExecuteAction::CreateLambda([]()
 			{
 				FGlobalTabmanager::Get()->TryInvokeTab(
-					FName("AssetInspector"));
+					FName("PackageInspector"));
 			}))
 		);
 	})
 );
 }
 
-void FAssetInspectorModule::ShutdownModule()
+void FPackageInspectorModule::ShutdownModule()
 {
-	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(AssetInspectorTabName);
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(PackageInspectorTabName);
 }
 
-TSharedRef<SDockTab> FAssetInspectorModule::OnSpawnPluginTab(
+TSharedRef<SDockTab> FPackageInspectorModule::OnSpawnPluginTab(
 	const FSpawnTabArgs& SpawnTabArgs)
 {
 	return SNew(SDockTab)
@@ -62,4 +62,4 @@ TSharedRef<SDockTab> FAssetInspectorModule::OnSpawnPluginTab(
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FAssetInspectorModule, AssetInspector)
+IMPLEMENT_MODULE(FPackageInspectorModule, PackageInspector)

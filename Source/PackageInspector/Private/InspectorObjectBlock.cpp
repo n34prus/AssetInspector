@@ -1,4 +1,4 @@
-﻿#include "InspectorTreeView.h"
+﻿#include "InspectorObjectBlock.h"
 
 #include "AssetRegistry/AssetData.h"
 
@@ -8,15 +8,15 @@
 #include "Engine/Blueprint.h"
 #include "UObject/UObjectIterator.h"
 
-void SInspectorTreeView::Construct(const FArguments& InArgs)
+void SInspectorObjectBlock::Construct(const FArguments& InArgs)
 {
 	ChildSlot
 	[
 		SAssignNew(TreeViewWidget, STreeView<FInspectObjectPtr>)
 		.TreeItemsSource(&RootItems)
-		.OnGenerateRow(this, &SInspectorTreeView::OnGenerateRow)
-		.OnGetChildren(this, &SInspectorTreeView::OnGetChildren)
-		.OnSelectionChanged(this, &SInspectorTreeView::OnSelectionChanged)
+		.OnGenerateRow(this, &SInspectorObjectBlock::OnGenerateRow)
+		.OnGetChildren(this, &SInspectorObjectBlock::OnGetChildren)
+		.OnSelectionChanged(this, &SInspectorObjectBlock::OnSelectionChanged)
 		.HeaderRow
 		(
 			SNew(SHeaderRow)
@@ -27,11 +27,11 @@ void SInspectorTreeView::Construct(const FArguments& InArgs)
 	];
 }
 
-SInspectorTreeView::~SInspectorTreeView()
+SInspectorObjectBlock::~SInspectorObjectBlock()
 {
 }
 
-void SInspectorTreeView::AddRootObjects(const TArray<UObject*>& RootObjects, bool ClearRoot)
+void SInspectorObjectBlock::AddRootObjects(const TArray<UObject*>& RootObjects, bool ClearRoot)
 {
 	if (ClearRoot)
 	{
@@ -48,14 +48,14 @@ void SInspectorTreeView::AddRootObjects(const TArray<UObject*>& RootObjects, boo
 	TreeViewWidget->RequestTreeRefresh();
 }
 
-void SInspectorTreeView::RemoveRootObjects(const TArray<UObject*>& RootObject)
+void SInspectorObjectBlock::RemoveRootObjects(const TArray<UObject*>& RootObject)
 {
 	for (UObject* Obj : RootObject)
 		if (RootItems.Contains(Obj)) RootItems.Remove(Obj);
 	TreeViewWidget->RequestTreeRefresh();
 }
 
-void SInspectorTreeView::ExtractPackageObjects(UObject* RootObject, FInspectObjectPtr RootNode, uint8_t depth)
+void SInspectorObjectBlock::ExtractPackageObjects(UObject* RootObject, FInspectObjectPtr RootNode, uint8_t depth)
 {
 	if (!RootObject) return;
 	TArray<UObject*> Objects;
@@ -71,7 +71,7 @@ void SInspectorTreeView::ExtractPackageObjects(UObject* RootObject, FInspectObje
 	}
 }
 
-TSharedRef<ITableRow> SInspectorTreeView::OnGenerateRow(
+TSharedRef<ITableRow> SInspectorObjectBlock::OnGenerateRow(
 	FInspectObjectPtr Item,
 	const TSharedRef<STableViewBase>& OwnerTable)
 {
@@ -92,7 +92,7 @@ TSharedRef<ITableRow> SInspectorTreeView::OnGenerateRow(
 	return SNew(SInspectorObjectRow, OwnerTable).Item(Item);
 }
 
-void SInspectorTreeView::OnGetChildren(
+void SInspectorObjectBlock::OnGetChildren(
 	FInspectObjectPtr Item,
 	TArray<FInspectObjectPtr>& OutChildren)
 {
@@ -104,7 +104,7 @@ void SInspectorTreeView::OnGetChildren(
 	}
 }
 
-void SInspectorTreeView::OnSelectionChanged(
+void SInspectorObjectBlock::OnSelectionChanged(
 	FInspectObjectPtr Item,
 	ESelectInfo::Type SelectInfo)
 {

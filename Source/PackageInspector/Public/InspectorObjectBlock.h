@@ -71,17 +71,17 @@ private:
 	FInspectObjectPtr Item;
 };
 
-class SInspectorTreeView : public SCompoundWidget
+class SInspectorObjectBlock : public SCompoundWidget
 {
 public:
 
-	SLATE_BEGIN_ARGS(SInspectorTreeView) {}
+	SLATE_BEGIN_ARGS(SInspectorObjectBlock) {}
 	SLATE_END_ARGS()
 
 	FOnObjectSelected OnObjectSelected;
 	
 	void Construct(const FArguments& InArgs);
-	virtual ~SInspectorTreeView();
+	virtual ~SInspectorObjectBlock();
 
 	void AddRootObjects(const TArray<UObject*>& RootObjects, bool ClearRoot = false);
 	inline void AddRootObject(UObject* RootObject, bool ClearRoot = false) { AddRootObjects({RootObject}, ClearRoot); }

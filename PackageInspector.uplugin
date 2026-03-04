@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "1.0",
-	"FriendlyName": "AssetInspector",
+	"FriendlyName": "PackageInspector",
 	"Description": "Editor for reflection system data for assets, packages",
 	"Category": "Other",
 	"CreatedBy": "simona, n34prus",
@@ -16,7 +16,7 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "AssetInspector",
+			"Name": "PackageInspector",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
 		}
