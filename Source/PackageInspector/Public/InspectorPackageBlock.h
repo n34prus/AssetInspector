@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
-#include "Widgets/Views/SListView.h"
 #include "UObject/Package.h"
 #include "InspectorCore.h"
 

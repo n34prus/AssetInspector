@@ -1,22 +1,20 @@
 ﻿#include "InspectorObjectBlock.h"
-
 #include "AssetRegistry/AssetData.h"
-
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/STableRow.h"
-
-#include "Engine/Blueprint.h"
 #include "UObject/UObjectIterator.h"
+#include "HAL/PlatformApplicationMisc.h"
 
 void SInspectorObjectBlock::Construct(const FArguments& InArgs)
 {
 	ChildSlot
 	[
-		SAssignNew(TreeViewWidget, STreeView<FInspectObjectPtr>)
+		SAssignNew(TreeView, STreeView<FInspectObjectPtr>)
 		.TreeItemsSource(&RootItems)
 		.OnGenerateRow(this, &SInspectorObjectBlock::OnGenerateRow)
 		.OnGetChildren(this, &SInspectorObjectBlock::OnGetChildren)
 		.OnSelectionChanged(this, &SInspectorObjectBlock::OnSelectionChanged)
+		.OnContextMenuOpening(this, &SInspectorObjectBlock::OnContextMenuOpening)
 		.HeaderRow
 		(
 			SNew(SHeaderRow)
@@ -45,14 +43,14 @@ void SInspectorObjectBlock::AddRootObjects(const TArray<UObject*>& RootObjects, 
 		RootItems.Add(RootNode);
 		ExtractPackageObjects(Obj, RootNode, 1);
 	}
-	TreeViewWidget->RequestTreeRefresh();
+	TreeView->RequestTreeRefresh();
 }
 
 void SInspectorObjectBlock::RemoveRootObjects(const TArray<UObject*>& RootObject)
 {
 	for (UObject* Obj : RootObject)
 		if (RootItems.Contains(Obj)) RootItems.Remove(Obj);
-	TreeViewWidget->RequestTreeRefresh();
+	TreeView->RequestTreeRefresh();
 }
 
 void SInspectorObjectBlock::ExtractPackageObjects(UObject* RootObject, FInspectObjectPtr RootNode, uint8_t depth)
@@ -113,4 +111,43 @@ void SInspectorObjectBlock::OnSelectionChanged(
 			: nullptr;
 
 	OnObjectSelected.ExecuteIfBound(Selected);
+}
+
+TSharedPtr<SWidget> SInspectorObjectBlock::OnContextMenuOpening()
+{
+	FMenuBuilder MenuBuilder(true, nullptr);
+
+	MenuBuilder.AddMenuEntry(
+		FText::FromString("Copy To Clipboard"),
+		FText::FromString("Copy selected package paths"),
+		FSlateIcon(),
+		FUIAction(
+			FExecuteAction::CreateSP(
+				this,
+				&SInspectorObjectBlock::CopySelectionToClipboard)
+		)
+	);
+
+	return MenuBuilder.MakeWidget();
+}
+
+void SInspectorObjectBlock::CopySelectionToClipboard()
+{
+	TArray<FInspectObjectPtr> Selected;
+	TreeView->GetSelectedItems(Selected);
+
+	FString Result;
+
+	// probably there is only one selected item, but still
+	for (FInspectObjectPtr Item : Selected)
+	{
+		UObject* Obj = Item.Get();
+		if (Obj)
+		{
+			Result += Obj->GetPathName();
+			Result += "\n";
+		}
+	}
+
+	FPlatformApplicationMisc::ClipboardCopy(*Result);
 }

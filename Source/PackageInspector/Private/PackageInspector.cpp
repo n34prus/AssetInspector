@@ -4,7 +4,6 @@
 
 #include "ToolMenus.h"
 #include "InspectorGeneralWindow.h"
-#include "LevelEditor.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "Framework/Docking/TabManager.h"
 

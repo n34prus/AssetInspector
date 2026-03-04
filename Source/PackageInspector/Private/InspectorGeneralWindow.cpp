@@ -5,8 +5,6 @@
 #include "InspectorPackageBlock.h"
 
 #include "ContentBrowserModule.h"
-#include "IContentBrowserSingleton.h"
-
 #include "Widgets/Layout/SSplitter.h"
 
 SInspectorGeneralWindow::~SInspectorGeneralWindow()

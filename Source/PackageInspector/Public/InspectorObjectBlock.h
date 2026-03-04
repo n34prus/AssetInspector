@@ -93,7 +93,7 @@ public:
 
 private:
 	
-	TSharedPtr<STreeView<FInspectObjectPtr>> TreeViewWidget;
+	TSharedPtr<STreeView<FInspectObjectPtr>> TreeView;
 
 	TArray<FInspectObjectPtr> RootItems;
 
@@ -104,4 +104,6 @@ private:
 	TSharedRef<ITableRow> OnGenerateRow(FInspectObjectPtr Item, const TSharedRef<STableViewBase>& OwnerTable);
 	void OnGetChildren(FInspectObjectPtr Item, TArray<FInspectObjectPtr>& OutChildren);
 	void OnSelectionChanged(FInspectObjectPtr Item, ESelectInfo::Type SelectInfo);
+	TSharedPtr<SWidget> OnContextMenuOpening();
+	void CopySelectionToClipboard();
 };

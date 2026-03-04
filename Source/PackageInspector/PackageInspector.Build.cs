@@ -30,8 +30,6 @@ public class PackageInspector : ModuleRules
 					"Core",
 					"CoreUObject",
 					"Engine",
-					"UMG",
-					
 					"Slate",
 					"SlateCore",
 					"InputCore"
@@ -42,18 +40,10 @@ public class PackageInspector : ModuleRules
 			PrivateDependencyModuleNames.AddRange(
 				new string[]
 				{
-					"CoreUObject",
-					"Engine",
-					"Slate",
-					"SlateCore",
-					"Blutility",
-					"UMGEditor",
-					"EditorSubsystem",
 					"UnrealEd",
-					"LevelEditor",
 					"ToolMenus",
-					"InputCore",
-					"ContentBrowser"
+					"ContentBrowser",
+					"ApplicationCore"
 				}
 			);
 		
