@@ -12,6 +12,12 @@ struct FPackageTreeNode
 	TWeakObjectPtr<UPackage> Package; // null for folder
 	TArray<TSharedPtr<FPackageTreeNode>> Children;
 
+	// filters
+	bool bHighlighted = false;
+	bool bHasPathMatch = false;  
+	bool bHasNameMatch = false;
+	bool bHasLeafMatch = false;    // есть совпавший лист в subtree
+
 	bool IsFolder() const { return !Package.IsValid(); }
 };
 
@@ -52,7 +58,14 @@ private:
 	void CollectPackagesRecursive(const FInspectPackagePtr& Node,	TArray<UObject*>& Out);
 	void SortTree(TArray<FInspectPackagePtr>& Nodes);
 
+	void OnSearchChanged(const FText& InText);
+	void ApplyFilter();
+	bool FilterNode(const FInspectPackagePtr& Node,	FInspectPackagePtr& OutNode);
 
 	TSharedPtr<STreeView<FInspectPackagePtr>> TreeView;
 	TArray<FInspectPackagePtr> RootNodes;
+	TArray<FInspectPackagePtr> AllRootNodes;
+
+	TSharedPtr<SSearchBox> SearchBox;
+	FString SearchString;
 };

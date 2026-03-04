@@ -1,5 +1,7 @@
 ﻿#include "InspectorPackageBlock.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Widgets/Input/SSearchBox.h"
+
 
 void SInspectorPackageRow::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTable)
 {
@@ -28,7 +30,16 @@ TSharedRef<SWidget> SInspectorPackageRow::GenerateWidgetForColumn(const FName& C
             + SHorizontalBox::Slot()
             .FillWidth(1.f)
             [
-                SNew(STextBlock).Text(FText::FromString(Item->Name))
+                SNew(STextBlock)
+                    .Text(FText::FromString(Item->Name))
+                    .ColorAndOpacity_Lambda([Item = Item]()
+                    {
+                        if (Item.IsValid() && Item->bHighlighted)
+                        {
+                            return FSlateColor(FLinearColor(0.5f, 1.f, 0.5f));
+                        }
+                        return FSlateColor::UseForeground();
+                    })
             ];
     }
     	
@@ -60,24 +71,34 @@ TSharedRef<SWidget> SInspectorPackageRow::GenerateWidgetForColumn(const FName& C
 
 void SInspectorPackageBlock::Construct(const FArguments& InArgs)
 {
-    TreeView = SNew(STreeView<FInspectPackagePtr>)
-        .TreeItemsSource(&RootNodes)
-        .OnGenerateRow(this, &SInspectorPackageBlock::OnGenerateRow)
-        .OnGetChildren(this, &SInspectorPackageBlock::OnGetChildren)
-        .SelectionMode(ESelectionMode::Multi)
-        .OnSelectionChanged(this, &SInspectorPackageBlock::OnSelectionChanged)
-        .HeaderRow
-        (
-            SNew(SHeaderRow)
-            + SHeaderRow::Column("Path").DefaultLabel(FText::FromString("Path"))
-            + SHeaderRow::Column("Flags").DefaultLabel(FText::FromString("Flags"))
-        );
-    
     ChildSlot
     [
-        TreeView.ToSharedRef()
-    ];
+        SNew(SVerticalBox)
 
+        + SVerticalBox::Slot()
+        .AutoHeight()
+        [
+            SAssignNew(SearchBox, SSearchBox)
+            .OnTextChanged(this, &SInspectorPackageBlock::OnSearchChanged)
+        ]
+
+        + SVerticalBox::Slot()
+        .FillHeight(1.f)
+        [
+            SAssignNew(TreeView, STreeView<FInspectPackagePtr>)
+            .TreeItemsSource(&RootNodes)
+            .OnGenerateRow(this, &SInspectorPackageBlock::OnGenerateRow)
+            .OnGetChildren(this, &SInspectorPackageBlock::OnGetChildren)
+            .SelectionMode(ESelectionMode::Multi)
+            .OnSelectionChanged(this, &SInspectorPackageBlock::OnSelectionChanged)
+            .HeaderRow
+            (
+                SNew(SHeaderRow)
+                + SHeaderRow::Column("Path").DefaultLabel(FText::FromString("Path"))
+                + SHeaderRow::Column("Flags").DefaultLabel(FText::FromString("Flags"))
+            )
+        ]
+    ];
     UpdatePackages();
 }
 
@@ -161,6 +182,9 @@ void SInspectorPackageBlock::UpdatePackages()
     {
         TreeView->RequestTreeRefresh();
     }
+
+    // store for future filtering
+    AllRootNodes = RootNodes;
 }
 
 void SInspectorPackageBlock::OnSelectionChanged(FInspectPackagePtr Item, ESelectInfo::Type SelectInfo)
@@ -251,4 +275,104 @@ void SInspectorPackageBlock::SortTree(TArray<FInspectPackagePtr>& Nodes)
             SortTree(Node->Children);
         }
     }
+}
+
+void SInspectorPackageBlock::OnSearchChanged(const FText& InText)
+{
+    SearchString = InText.ToString();
+    ApplyFilter();
+}
+
+bool SInspectorPackageBlock::FilterNode(
+    const FInspectPackagePtr& Node,
+    FInspectPackagePtr& OutNode)
+{
+    if (!Node.IsValid())
+        return false;
+
+    bool bNameMatch =
+        !SearchString.IsEmpty() &&
+        (Node->Name.Contains(SearchString, ESearchCase::IgnoreCase));
+
+    bool bPathMatch =
+        !SearchString.IsEmpty() &&
+        (Node->FullPath.Contains(SearchString, ESearchCase::IgnoreCase));
+
+    TArray<FInspectPackagePtr> FilteredChildren;
+    bool bChildDisplay = false;
+    bool bChildLeaf = false;
+
+    for (const auto& Child : Node->Children)
+    {
+        FInspectPackagePtr FilteredChild;
+        if (FilterNode(Child, FilteredChild))
+        {
+            FilteredChildren.Add(FilteredChild);
+            bChildDisplay = true;
+
+            if (FilteredChild->bHasLeafMatch || FilteredChild->bHasNameMatch)
+            {
+                bChildLeaf = true;
+            }
+        }
+    }
+    
+    if (!(bNameMatch || bPathMatch || bChildDisplay))
+        return false;
+
+    OutNode = MakeShared<FPackageTreeNode>(*Node);
+    OutNode->Children = MoveTemp(FilteredChildren);
+
+    OutNode->bHasNameMatch = bNameMatch;
+    OutNode->bHasPathMatch = bPathMatch;
+    OutNode->bHasLeafMatch = bChildLeaf;
+
+    // green gighlight
+    OutNode->bHighlighted = bNameMatch;
+    return true;
+}
+
+void SInspectorPackageBlock::ApplyFilter()
+{
+    RootNodes.Empty();
+
+    if (SearchString.IsEmpty()) RootNodes = AllRootNodes;
+    else for (const auto& Root : AllRootNodes)
+    {
+        FInspectPackagePtr FilteredNode;
+        if (FilterNode(Root, FilteredNode))
+        {
+            RootNodes.Add(FilteredNode);
+        }
+    }
+
+    SortTree(RootNodes);
+    TreeView->RequestTreeRefresh();
+
+    // another possible option - local struct instead of this magic
+    auto ExpandRecursively = [&](auto&& Self, const FInspectPackagePtr& Node) -> void
+    {
+        if (!Node.IsValid())
+            return;
+        
+        if (Node->bHasLeafMatch)
+        {
+            TreeView->SetItemExpansion(Node, true);
+
+            for (const auto& Child : Node->Children)
+            {
+                Self(Self, Child);
+            }
+        }
+        else
+        {
+            TreeView->SetItemExpansion(Node, false);
+        }
+    };
+    
+    for (const auto& Root : RootNodes)
+    {
+        ExpandRecursively(ExpandRecursively, Root);
+    }
+
 }
