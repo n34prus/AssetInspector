@@ -25,7 +25,7 @@ void SInspectorGeneralWindow::RebuildLayout()
 		SNew(SSplitter)
 
 		+ SSplitter::Slot()
-		.Value(0.25f)
+		.Value(0.1f)
 		[
 			SAssignNew(SettingsBlock, SInspectorSettingsBlock)
 		]
@@ -37,7 +37,7 @@ void SInspectorGeneralWindow::RebuildLayout()
 		]
 
 		+ SSplitter::Slot()
-		.Value(0.25f)
+		.Value(0.4f)
 		[
 			SAssignNew(TreeBlock, SInspectorObjectBlock)
 		]

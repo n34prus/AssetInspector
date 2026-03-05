@@ -62,13 +62,18 @@ TSharedRef<SWidget> SInspectorPackageRow::GenerateWidgetForColumn(const FName& C
             if (Flags & PKG_Cooked)             Out += "CK ";
 
             return SNew(STextBlock)
-                .Text(FText::FromString(Out.IsEmpty() ? "-" : Out));
+                .Text(FText::FromString(Out.IsEmpty() ? "-" : Out))
+                .Justification(ETextJustify::Center);
         }
 
-        return SNew(STextBlock).Text(FText::FromString(" "));
+        return SNew(STextBlock)
+            .Text(FText::FromString(" "))
+            .Justification(ETextJustify::Center);
     }
 
-    return SNew(STextBlock).Text(FText::FromString("-"));
+    return SNew(STextBlock)
+        .Text(FText::FromString("-"))
+        .Justification(ETextJustify::Center);
 }
 
 void SInspectorPackageBlock::Construct(const FArguments& InArgs)
@@ -101,8 +106,8 @@ void SInspectorPackageBlock::Construct(const FArguments& InArgs)
             .HeaderRow
             (
                 SNew(SHeaderRow)
-                + SHeaderRow::Column("Path").DefaultLabel(FText::FromString("Path"))
-                + SHeaderRow::Column("Flags").DefaultLabel(FText::FromString("Flags"))
+                + SHeaderRow::Column("Path").DefaultLabel(FText::FromString("Path")).FillWidth(0.8f)
+                + SHeaderRow::Column("Flags").DefaultLabel(FText::FromString("Flags")).FillWidth(0.2f)
             )
         ]
     ];
