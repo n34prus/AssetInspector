@@ -3,6 +3,7 @@
 #include "InspectorObjectBlock.h"
 #include "InspectorDetailsBlock.h"
 #include "InspectorPackageBlock.h"
+#include "InspectorMetadataBlock.h"
 
 #include "ContentBrowserModule.h"
 #include "Widgets/Layout/SSplitter.h"
@@ -52,6 +53,12 @@ void SInspectorGeneralWindow::RebuildLayout()
 		[
 			SAssignNew(DetailsBlock, SInspectorDetailsBlock)
 		]
+
+		+ SSplitter::Slot()
+		.Value(0.25f)
+		[
+			SAssignNew(MetadataBlock, SInspectorMetadataBlock)
+		]
 	];
 
 	SettingsBlock->OnSettingsChanged.BindLambda(
@@ -67,6 +74,10 @@ void SInspectorGeneralWindow::RebuildLayout()
 			if (DetailsBlock)
 			{
 				DetailsBlock->SetObject(Obj);
+			}
+			if (MetadataBlock)
+			{
+				MetadataBlock->SetTargetObject(Obj);
 			}
 		});
 

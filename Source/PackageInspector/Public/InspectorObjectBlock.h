@@ -66,14 +66,15 @@ private:
 	void OnSelectionChanged(FInspectObjectPtr Item, ESelectInfo::Type SelectInfo);
 	auto OnItemExpansionChanged(FInspectObjectPtr Item, bool bExpanded) -> void;
 	void UpdateHint();
-
+	
 	// context menu //
 	TSharedPtr<SWidget> OnContextMenuOpening();
-	void OnRenameCommitted(const FText& Text, ETextCommit::Type Arg, UObject* Object);
+	void CmOnRenameCommitted(const FText& Text, ETextCommit::Type Arg, UObject* Object);
 	void RenameSelectedObject();
-	void OnRemoveFromPackage();
-	void CopySelectionToClipboard();
-	void CreateSubObject();
+	void CmOnRemoveFromPackage();
+	void CmOnDestroyObject();
+	void CmCopySelectionToClipboard();
+	void CmCreateSubObject();
 	void OnNewSubObjectNameCommitted(const FText& Text, ETextCommit::Type Arg, UClass* Class);
 
 };

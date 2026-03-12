@@ -5,8 +5,6 @@
 #include "UObject/UObjectIterator.h"
 #include "HAL/PlatformApplicationMisc.h"
 
-//#include "ClassViewerModule.h"
-//#include "SClassViewer.h"
 #include "Kismet2/SClassPickerDialog.h"
 #include "Widgets/Input/STextEntryPopup.h"
 
@@ -47,8 +45,6 @@ TSharedRef<SWidget> SInspectorObjectRow::GenerateWidgetForColumn(const FName& Co
 			
 	if (ColumnName == "Name")
 	return SNew(STextBlock)
-			//.Text(FText::FromString(
-			//	Obj ? Obj->GetName() : TEXT("-")));
 			.Text_Lambda([I = Item]()
 			{
 				if (!I.IsValid()) return FText::FromString("-");
@@ -266,7 +262,7 @@ void SInspectorObjectBlock::OnSelectionChanged(
 	OnObjectSelected.ExecuteIfBound(Selected);
 }
 
-void SInspectorObjectBlock::OnRenameCommitted(const FText& Text, ETextCommit::Type Arg, UObject* Object)
+void SInspectorObjectBlock::CmOnRenameCommitted(const FText& Text, ETextCommit::Type Arg, UObject* Object)
 {
 	if (Arg != ETextCommit::OnEnter || !Object)
 		return;
@@ -287,7 +283,7 @@ void SInspectorObjectBlock::RenameSelectedObject()
 		SNew(STextEntryPopup)
 		.Label(FText::FromString("New Name"))
 		.DefaultText(FText::FromName(Selected->GetFName()))
-		.OnTextCommitted(FOnTextCommitted::CreateSP(this, &SInspectorObjectBlock::OnRenameCommitted, Selected));
+		.OnTextCommitted(FOnTextCommitted::CreateSP(this, &SInspectorObjectBlock::CmOnRenameCommitted, Selected));
 
 	FSlateApplication::Get().PushMenu(
 		SharedThis(this),
@@ -298,7 +294,7 @@ void SInspectorObjectBlock::RenameSelectedObject()
 	);
 }
 
-void SInspectorObjectBlock::OnRemoveFromPackage()
+void SInspectorObjectBlock::CmOnRemoveFromPackage()
 {
 	auto Selected = TreeView->GetSelectedItems();
 
@@ -308,10 +304,25 @@ void SInspectorObjectBlock::OnRemoveFromPackage()
 			continue;
 
 		UObject* Obj = Item.Get();
+		Obj->Rename(nullptr, GetTransientPackage());
+	}
 
+	UpdateLayout();
+}
+
+void SInspectorObjectBlock::CmOnDestroyObject()
+{
+	auto Selected = TreeView->GetSelectedItems();
+
+	for (auto& Item : Selected)
+	{
+		if (!Item.IsValid() || !Item.Get()) 
+			continue;
+
+		UObject* Obj = Item.Get();
 		Obj->RemoveFromRoot();
 		Obj->Rename(nullptr, GetTransientPackage());
-		//Obj->MarkAsGarbage();
+		Obj->MarkAsGarbage();
 	}
 
 	UpdateLayout();
@@ -327,7 +338,7 @@ TSharedPtr<SWidget> SInspectorObjectBlock::OnContextMenuOpening()
 		FSlateIcon(),
 		FUIAction(
 			FExecuteAction::CreateSP(this,
-				&SInspectorObjectBlock::CopySelectionToClipboard)
+				&SInspectorObjectBlock::CmCopySelectionToClipboard)
 		)
 	);
 	
@@ -345,16 +356,25 @@ TSharedPtr<SWidget> SInspectorObjectBlock::OnContextMenuOpening()
 			FText::FromString("Create new UObject with this object as Outer"),
 			FSlateIcon(),
 			FUIAction(
-				FExecuteAction::CreateSP(this, &SInspectorObjectBlock::CreateSubObject)
+				FExecuteAction::CreateSP(this, &SInspectorObjectBlock::CmCreateSubObject)
 			)
 		);
 
 		MenuBuilder.AddMenuEntry(
-			FText::FromString("Remove from Package"),
-			FText::FromString("Remove the selected object from its package (runtime only)"),
+			FText::FromString("Destroy"),
+			FText::FromString("Remove the selected object from root and mark it as garbage"),
 			FSlateIcon(),
 			FUIAction(
-				FExecuteAction::CreateSP(this, &SInspectorObjectBlock::OnRemoveFromPackage)
+				FExecuteAction::CreateSP(this, &SInspectorObjectBlock::CmOnDestroyObject)
+			)
+		);
+		
+		MenuBuilder.AddMenuEntry(
+			FText::FromString("Remove from Package"),
+			FText::FromString("Remove the selected object from its package to transient"),
+			FSlateIcon(),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SInspectorObjectBlock::CmOnRemoveFromPackage)
 			)
 		);
 	}
@@ -362,14 +382,10 @@ TSharedPtr<SWidget> SInspectorObjectBlock::OnContextMenuOpening()
 	return MenuBuilder.MakeWidget();
 }
 
-void SInspectorObjectBlock::CopySelectionToClipboard()
+void SInspectorObjectBlock::CmCopySelectionToClipboard()
 {
-	//TArray<FInspectObjectPtr> Selected;
-	//TreeView->GetSelectedItems(Selected);
-
 	FString Result;
-
-	// probably there is only one selected item, but still
+	
 	for (FInspectObjectPtr Item : TreeView->GetSelectedItems())
 	{
 		UObject* Obj = Item.Get();
@@ -383,7 +399,7 @@ void SInspectorObjectBlock::CopySelectionToClipboard()
 	FPlatformApplicationMisc::ClipboardCopy(*Result);
 }
 
-void SInspectorObjectBlock::CreateSubObject()
+void SInspectorObjectBlock::CmCreateSubObject()
 {
 	UClass* ChosenClass = nullptr;
 
@@ -427,8 +443,6 @@ void SInspectorObjectBlock::CreateSubObject()
 	FSlateApplication::Get().GetCursorPos(),
 	FPopupTransitionEffect::TypeInPopup
 	);
-
-	
 }
 
 

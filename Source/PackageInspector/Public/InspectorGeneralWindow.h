@@ -7,6 +7,7 @@ class SInspectorSettingsBlock;
 class SInspectorObjectBlock;
 class SInspectorDetailsBlock;
 class SInspectorPackageBlock;
+class SInspectorMetadataBlock;
 
 class SInspectorGeneralWindow : public SCompoundWidget
 {
@@ -24,6 +25,7 @@ private:
 	TSharedPtr<SInspectorPackageBlock>  PackageBlock;
 	TSharedPtr<SInspectorObjectBlock>    ObjectBlock;
 	TSharedPtr<SInspectorDetailsBlock>  DetailsBlock;
+	TSharedPtr<SInspectorMetadataBlock>  MetadataBlock;
 	
 	FDelegateHandle ContentBrowserHandle;
 
