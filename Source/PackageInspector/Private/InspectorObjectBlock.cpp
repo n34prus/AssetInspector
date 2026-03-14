@@ -333,12 +333,22 @@ TSharedPtr<SWidget> SInspectorObjectBlock::OnContextMenuOpening()
 	FMenuBuilder MenuBuilder(true, nullptr);
 
 	MenuBuilder.AddMenuEntry(
-		FText::FromString("Copy To Clipboard"),
-		FText::FromString("Copy selected package paths"),
+		FText::FromString("Copy path"),
+		FText::FromString("Copy selected object paths to clipboard"),
 		FSlateIcon(),
 		FUIAction(
 			FExecuteAction::CreateSP(this,
-				&SInspectorObjectBlock::CmCopySelectionToClipboard)
+				&SInspectorObjectBlock::CmCopyPathToClipboard)
+		)
+	);
+
+	MenuBuilder.AddMenuEntry(
+		FText::FromString("Copy address"),
+		FText::FromString("Copy selected object addresses to clipboard"),
+		FSlateIcon(),
+		FUIAction(
+			FExecuteAction::CreateSP(this,
+				&SInspectorObjectBlock::CmCopyAddressToClipboard)
 		)
 	);
 	
@@ -382,7 +392,7 @@ TSharedPtr<SWidget> SInspectorObjectBlock::OnContextMenuOpening()
 	return MenuBuilder.MakeWidget();
 }
 
-void SInspectorObjectBlock::CmCopySelectionToClipboard()
+void SInspectorObjectBlock::CmCopyPathToClipboard()
 {
 	FString Result;
 	
@@ -397,6 +407,21 @@ void SInspectorObjectBlock::CmCopySelectionToClipboard()
 	}
 
 	FPlatformApplicationMisc::ClipboardCopy(*Result);
+}
+
+void SInspectorObjectBlock::CmCopyAddressToClipboard()
+{
+	FString Result;
+	
+	for (FInspectObjectPtr Item : TreeView->GetSelectedItems())
+	{
+		UObject* Obj = Item.Get();
+		if (Obj)
+		{
+			Result += FString::Printf(TEXT("0x%p"), Obj);
+			Result += "\n";
+		}
+	}
 }
 
 void SInspectorObjectBlock::CmCreateSubObject()
@@ -574,7 +599,7 @@ void SInspectorObjectBlock::UpdateHint()
 			}
 
 			FText PathHint = FText::FromString(Package->GetName());
-			FText NameHint = FText::FromString(Object->GetName());
+			FText NameHint = FText::FromString(FString::Printf(TEXT("%s (0x%p)"), *Object->GetName(), Object));
 			FText FlagHint = FText::FromString(Out);
 			FText HintText = FText::Format(
 				FText::FromString("{0}\n{1}\n{2}"),

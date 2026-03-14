@@ -73,7 +73,8 @@ private:
 	void RenameSelectedObject();
 	void CmOnRemoveFromPackage();
 	void CmOnDestroyObject();
-	void CmCopySelectionToClipboard();
+	void CmCopyPathToClipboard();
+	void CmCopyAddressToClipboard();
 	void CmCreateSubObject();
 	void OnNewSubObjectNameCommitted(const FText& Text, ETextCommit::Type Arg, UClass* Class);
 

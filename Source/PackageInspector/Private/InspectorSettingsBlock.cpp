@@ -6,6 +6,16 @@
 
 void SInspectorSettingsBlock::Construct(const FArguments& InArgs)
 {
+	const bool bComingSoon = true;
+	if (bComingSoon)
+	{
+		ChildSlot
+		[
+			SNew(STextBlock).Text(FText::FromString("Coming soon")).Justification(ETextJustify::Center)
+		];
+		return;
+	}
+	
 	ChildSlot
 	[
 		SNew(SVerticalBox)

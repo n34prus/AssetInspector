@@ -6,7 +6,10 @@
 #include "InspectorMetadataBlock.h"
 
 #include "ContentBrowserModule.h"
+#include "Widgets/Colors/SColorBlock.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SSplitter.h"
+#include "Widgets/Layout/SWidgetSwitcher.h"
 
 SInspectorGeneralWindow::~SInspectorGeneralWindow()
 {
@@ -19,6 +22,14 @@ SInspectorGeneralWindow::~SInspectorGeneralWindow()
 
 void SInspectorGeneralWindow::Construct(const FArguments& InArgs)
 {
+	InspectorTabStyle = FAppStyle::Get().GetWidgetStyle<FCheckBoxStyle>("ToggleButtonCheckbox");
+	InspectorTabStyle.UncheckedImage.TintColor			= FSlateColor(FLinearColor::Transparent);
+	InspectorTabStyle.UncheckedHoveredImage.TintColor	= SelectedGrey;
+	InspectorTabStyle.UncheckedPressedImage.TintColor	= PressedGrey;
+	InspectorTabStyle.CheckedImage.TintColor			= SelectedGrey;
+	InspectorTabStyle.CheckedHoveredImage.TintColor		= SelectedGrey;
+	InspectorTabStyle.CheckedPressedImage.TintColor		= PressedGrey;
+	
 	RebuildLayout();
 	BindToContentBrowser();
 	TimerHandlePtr = RegisterActiveTimer(UpdateFrequency, FWidgetActiveTimerDelegate::CreateSP(this, &SInspectorGeneralWindow::OnTick));
@@ -29,13 +40,7 @@ void SInspectorGeneralWindow::RebuildLayout()
 	ChildSlot
 	[
 		SNew(SSplitter)
-
-		+ SSplitter::Slot()
-		.Value(0.1f)
-		[
-			SAssignNew(SettingsBlock, SInspectorSettingsBlock)
-		]
-
+		
 		+ SSplitter::Slot()
 		.Value(0.25f)
 		[
@@ -49,15 +54,134 @@ void SInspectorGeneralWindow::RebuildLayout()
 		]
 
 		+ SSplitter::Slot()
-		.Value(0.25f)
+				.Value(0.25f)
 		[
-			SAssignNew(DetailsBlock, SInspectorDetailsBlock)
-		]
+			SNew(SVerticalBox)
 
-		+ SSplitter::Slot()
-		.Value(0.25f)
-		[
-			SAssignNew(MetadataBlock, SInspectorMetadataBlock)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(SBox)
+				.HeightOverride(25.f)
+			]
+			
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(SBox)
+				.HeightOverride(25.f)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+					[
+						SNew(SHorizontalBox)
+
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(SCheckBox)
+							.Style(&InspectorTabStyle)
+							.IsChecked_Lambda([this]()
+							{
+								return TabSwitcher->GetActiveWidgetIndex() == 1
+								? ECheckBoxState::Checked
+								: ECheckBoxState::Unchecked;
+							})
+							.OnCheckStateChanged_Lambda([this](ECheckBoxState State)
+							{
+								if (State == ECheckBoxState::Checked) TabSwitcher->SetActiveWidgetIndex(1);
+							})
+							[
+								SNew(STextBlock).Text(FText::FromString("Details"))
+								.Justification(ETextJustify::Center)
+							]
+						]
+
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(SCheckBox)
+							.Style(&InspectorTabStyle)
+							.IsChecked_Lambda([this]()
+							{
+								return TabSwitcher->GetActiveWidgetIndex() == 2
+								? ECheckBoxState::Checked
+								: ECheckBoxState::Unchecked;
+							})
+							.OnCheckStateChanged_Lambda([this](ECheckBoxState State)
+							{
+								if (State == ECheckBoxState::Checked) TabSwitcher->SetActiveWidgetIndex(2);
+							})
+							[
+								SNew(STextBlock).Text(FText::FromString("Metadata"))
+								.Justification(ETextJustify::Center)
+							]
+						]
+
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.0f)
+						
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(SCheckBox)
+							.Style(&InspectorTabStyle)
+							.IsChecked_Lambda([this]()
+							{
+								return TabSwitcher->GetActiveWidgetIndex() == 0
+								? ECheckBoxState::Checked
+								: ECheckBoxState::Unchecked;
+							})
+							.OnCheckStateChanged_Lambda([this](ECheckBoxState State)
+							{
+								if (State == ECheckBoxState::Checked) TabSwitcher->SetActiveWidgetIndex(0);
+							})
+							[
+								SNew(SScaleBox)
+								.Stretch(EStretch::ScaleToFit)
+								[
+									SNew(SImage)
+									.Image(FCoreStyle::Get().GetBrush("Icons.Settings"))
+								]
+							]
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Bottom)
+					[
+						SNew(SBox)
+						.HeightOverride(3.f)
+						[
+							SNew(SColorBlock)
+							.Color(SelectedGrey)
+						]
+					]
+				]
+			]
+
+			+ SVerticalBox::Slot()
+			.FillHeight(1)
+			[
+				SAssignNew(TabSwitcher, SWidgetSwitcher)
+				
+				+ SWidgetSwitcher::Slot()
+				[
+					SAssignNew(SettingsBlock, SInspectorSettingsBlock)
+				]
+				
+				+ SWidgetSwitcher::Slot()
+				[
+					SAssignNew(DetailsBlock, SInspectorDetailsBlock)
+				]
+
+				+ SWidgetSwitcher::Slot()
+				[
+					SAssignNew(MetadataBlock, SInspectorMetadataBlock)
+				]
+			]
 		]
 	];
 
@@ -89,6 +213,8 @@ void SInspectorGeneralWindow::RebuildLayout()
 				ObjectBlock->SetRootObjects(ObjArr);
 			}
 		});
+
+	TabSwitcher->SetActiveWidgetIndex(1);
 }
 
 EActiveTimerReturnType SInspectorGeneralWindow::OnTick(double InCurrentTime, float InDeltaTime)
@@ -99,7 +225,7 @@ EActiveTimerReturnType SInspectorGeneralWindow::OnTick(double InCurrentTime, flo
 
 void SInspectorGeneralWindow::UpdateLayout()
 {
-	// if (PackageBlock) PackageBlock->UpdateLayout(); better to stay on manua update
+	// if (PackageBlock) PackageBlock->UpdateLayout(); better to stay on manual update
 	if (ObjectBlock) ObjectBlock->UpdateLayout();
 	if (DetailsBlock) DetailsBlock->UpdateLayout();
 }

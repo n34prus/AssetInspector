@@ -26,11 +26,16 @@ private:
 	TSharedPtr<SInspectorObjectBlock>    ObjectBlock;
 	TSharedPtr<SInspectorDetailsBlock>  DetailsBlock;
 	TSharedPtr<SInspectorMetadataBlock>  MetadataBlock;
+	TSharedPtr<SWidgetSwitcher> TabSwitcher;
 	
 	FDelegateHandle ContentBrowserHandle;
 
 	float UpdateFrequency = 1.0f;	// seconds
 	TSharedPtr<FActiveTimerHandle> TimerHandlePtr;
+	FCheckBoxStyle InspectorTabStyle;
+	FLinearColor SelectedGrey {0.03f, 0.03f, 0.03f, 1.0f};
+	FLinearColor PressedGrey {0.02f, 0.02f, 0.02f, 1.0f};
+	
 	EActiveTimerReturnType OnTick(double InCurrentTime, float InDeltaTime);
 	void UpdateLayout();
 	
