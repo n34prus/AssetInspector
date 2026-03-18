@@ -70,6 +70,7 @@ private:
 	// context menu //
 	TSharedPtr<SWidget> OnContextMenuOpening();
 	void CmOnRenameCommitted(const FText& Text, ETextCommit::Type Arg, UObject* Object);
+	void CreateRenameWindow(const UObject& Object, const FOnTextCommitted& OnTextCommitted);
 	void RenameSelectedObject();
 	void CmOnRemoveFromPackage();
 	void CmOnDestroyObject();
@@ -77,7 +78,6 @@ private:
 	void CmCopyAddressToClipboard();
 	void CmCreateSubObject();
 	void OnNewSubObjectNameCommitted(const FText& Text, ETextCommit::Type Arg, UClass* Class);
-
 };
 
 

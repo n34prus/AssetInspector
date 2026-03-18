@@ -4,7 +4,6 @@
 #include "HAL/PlatformApplicationMisc.h"
 
 #include "Kismet2/SClassPickerDialog.h"
-#include "Widgets/Input/STextEntryPopup.h"
 
 void SInspectorObjectRow::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTable)
 {
@@ -143,7 +142,7 @@ void SInspectorObjectBlock::RemoveRootObjects(const TArray<UObject*>& RootObject
 	UpdateLayout();
 }
 
-PRAGMA_DISABLE_OPTIMIZATION
+//UE_DISABLE_OPTIMIZATION
 void SInspectorObjectBlock::UpdateLayout()
 {
 	bool bSkipDuplicateCheck = true;	// set false to debug
@@ -196,7 +195,7 @@ void SInspectorObjectBlock::UpdateLayout()
 
 	UpdateHint();
 }
-PRAGMA_ENABLE_OPTIMIZATION
+//UE_ENABLE_OPTIMIZATION
 
 void SInspectorObjectBlock::ExtractPackageObjects(FInspectObjectPtr RootNode, uint8_t depth)
 {
@@ -270,6 +269,104 @@ void SInspectorObjectBlock::CmOnRenameCommitted(const FText& Text, ETextCommit::
 	FSlateApplication::Get().DismissAllMenus();
 }
 
+void SInspectorObjectBlock::CreateRenameWindow(const UObject& Object, const FOnTextCommitted& OnTextCommitted)
+{
+	TSharedRef<SEditableTextBox> TextEntry =
+		SNew(SEditableTextBox)
+		.Text(FText::FromString(Object.GetName()))
+		.OnTextCommitted(OnTextCommitted);
+
+	TSharedRef<SWidget> Content = SNew(SVerticalBox)
+		
+	+ SVerticalBox::Slot()
+	.AutoHeight()
+	.Padding(10, 10, 10, 5)
+	[
+		SNew(STextBlock)
+		.Text(FText::FromString("Enter new name for the object"))
+	]
+
+	+ SVerticalBox::Slot()
+	.AutoHeight()
+	.Padding(10, 0, 10, 5)
+	[
+		SNew(STextBlock)
+		.Text(FText::FromString(
+			FString::Printf(TEXT("Old name: %s"), *Object.GetName())
+		))
+	]
+
+	+ SVerticalBox::Slot()
+	.AutoHeight()
+	.Padding(10, 0, 10, 10)
+	[
+		TextEntry
+	]
+
+	+ SVerticalBox::Slot()
+	.AutoHeight()
+	.HAlign(HAlign_Right)
+	.Padding(10)
+	[
+		SNew(SHorizontalBox)
+
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.Padding(5, 0)
+		[
+			SNew(SButton)
+			.Text(FText::FromString("Cancel"))
+			.OnClicked_Lambda([this]()
+			{
+				FSlateApplication::Get().DismissAllMenus();
+				return FReply::Handled();
+			})
+		]
+
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.Padding(5, 0)
+		[
+			SNew(SButton)
+			.Text(FText::FromString("OK"))
+			.OnClicked_Lambda([this, TextEntry, OnTextCommitted]()
+			{
+				OnTextCommitted.ExecuteIfBound(
+					TextEntry->GetText(),
+					ETextCommit::OnEnter
+				);
+
+				FSlateApplication::Get().DismissAllMenus();
+				return FReply::Handled();
+			})
+		]
+	];
+
+	Content->SlatePrepass();
+	const FVector2D PopupSize = Content->GetDesiredSize();
+	
+	TSharedPtr<SWindow> ParentWindow = FSlateApplication::Get().GetActiveTopLevelWindow();
+	FVector2D WindowPos = FVector2D::ZeroVector;
+	FVector2D WindowSize = FVector2D::ZeroVector;
+	if (ParentWindow.IsValid())
+	{
+		FGeometry Geo = ParentWindow->GetWindowGeometryInScreen();
+		WindowPos = Geo.GetAbsolutePosition();
+		WindowSize = Geo.GetAbsoluteSize();
+	}
+
+	FVector2D WindowCenter = WindowPos + WindowSize * 0.5f;
+	FVector2D CenterPos = WindowCenter - PopupSize * 0.5f;
+	
+	FSlateApplication::Get().PushMenu(
+	SharedThis(this),
+	FWidgetPath(),
+	Content,
+	CenterPos,
+	FPopupTransitionEffect::TypeInPopup
+	);
+}
+
 void SInspectorObjectBlock::RenameSelectedObject()
 {
 	UObject* SeletedObject = nullptr;
@@ -282,23 +379,13 @@ void SInspectorObjectBlock::RenameSelectedObject()
 		}
 	}
 	if (!SeletedObject) return;
-	
-	TSharedRef<STextEntryPopup> TextEntry =
-		SNew(STextEntryPopup)
-		.Label(FText::FromString("New Name"))
-		.DefaultText(FText::FromName(SeletedObject->GetFName()))
-		.OnTextCommitted(FOnTextCommitted::CreateSP(
+
+	CreateRenameWindow(*SeletedObject,
+		FOnTextCommitted::CreateSP(
 			this,
 			&SInspectorObjectBlock::CmOnRenameCommitted,
 			SeletedObject));
-
-	FSlateApplication::Get().PushMenu(
-			SharedThis(this),
-			FWidgetPath(),
-			TextEntry,
-			FSlateApplication::Get().GetCursorPos(),
-			FPopupTransitionEffect(FPopupTransitionEffect::TypeInPopup)
-	);
+	
 }
 
 void SInspectorObjectBlock::CmOnRemoveFromPackage()
@@ -437,6 +524,7 @@ void SInspectorObjectBlock::CmCreateSubObject()
 {
 	UClass* ChosenClass = nullptr;
 
+	
 	FClassViewerInitializationOptions Options;
 	Options.Mode = EClassViewerMode::ClassPicker;
 	Options.bShowNoneOption = false;
@@ -450,33 +538,18 @@ void SInspectorObjectBlock::CmCreateSubObject()
 			ChosenClass,
 			UObject::StaticClass()
 		);
-
+	
 	if (!bPressedOk || !ChosenClass)
 	{
 		return;
 	}
 
-	FText DefaultName = FText::FromString("NewObject");
-
-	TSharedRef<STextEntryPopup> TextEntry =
-		SNew(STextEntryPopup)
-		.Label(FText::FromString("Object Name"))
-		.DefaultText(DefaultName)
-		.OnTextCommitted(
-			FOnTextCommitted::CreateSP(
+	CreateRenameWindow(*ChosenClass,
+		FOnTextCommitted::CreateSP(
 				this,
 				&SInspectorObjectBlock::OnNewSubObjectNameCommitted,
 				ChosenClass
-			)
-		);
-
-	FSlateApplication::Get().PushMenu(
-	SharedThis(this),
-	FWidgetPath(),
-	TextEntry,
-	FSlateApplication::Get().GetCursorPos(),
-	FPopupTransitionEffect::TypeInPopup
-	);
+			));
 }
 
 
