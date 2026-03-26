@@ -1,4 +1,5 @@
 ﻿#include "InspectorMetadataBlock.h"
+#include "Misc/EngineVersionComparison.h"
 
 TArray<FName> FInspectorMetaDataHelper::GetAvaliableMetaKeys()
 {
@@ -52,23 +53,46 @@ void FInspectorMetaDataHelper::RefreshMetaDataCollection()
 
 TMap<UObject*, FInspectorObjectMetaData> FInspectorMetaDataHelper::GetMetaData(const UPackage* Package)
 {
+	
 	TMap<UObject *, FInspectorObjectMetaData> Result;
 
 	if (!Package) return Result;
-	bool bHasMetaData = Package->HasMetaData();
-	if (!bHasMetaData) return Result;
-
 	auto ConstPackage = const_cast<UPackage*>(Package);
 	if (!ConstPackage)
 		return Result;
+	
+	bool bHasMetaData = false;
+	
+#if UE_VERSION_OLDER_THAN(5, 6, 0)
+	bHasMetaData = ConstPackage->HasMetaData();
+	if (!bHasMetaData) return Result;
+	const auto & MetaDataMap = ConstPackage->GetMetaData()->ObjectMetaDataMap;
+#else
+	const auto & MetaDataMap = ConstPackage->GetMetaData().ObjectMetaDataMap;
+	bHasMetaData = !MetaDataMap.IsEmpty();
+	if (!bHasMetaData) return Result;
+#endif
+	
 
-	for (const auto & Entry : ConstPackage->GetMetaData()->ObjectMetaDataMap)
+#if UE_VERSION_OLDER_THAN(5, 6, 0)
+	for (const auto & Entry : MetaDataMap)
 	{
 		if (Entry.Key.IsValid( ))
 		{
 			Result.Add(Entry.Key.Get( ), FInspectorObjectMetaData{ Entry.Value });
 		}
 	}
+#else
+	for (const auto & Entry : MetaDataMap)
+	{
+		if (Entry.Key.IsValid( ))
+		{
+			auto * Object = Entry.Key.ResolveObject();
+			if (!Object) continue;
+			Result.Add(Object, FInspectorObjectMetaData{ Entry.Value });
+		}
+	}
+#endif
 
 	return Result;
 }
@@ -83,7 +107,8 @@ TArray<FInspectorObjectMetaData> FInspectorMetaDataHelper::GetMetaDataForUnreach
 	auto ConstPackage = const_cast<UPackage*>(Package);
 	if (!ConstPackage)
 		return Result;
-
+	
+#if UE_VERSION_OLDER_THAN(5, 6, 0)
 	for (const auto & Entry : ConstPackage->GetMetaData()->ObjectMetaDataMap)
 	{
 		if (!Entry.Key.IsValid( ))
@@ -91,7 +116,16 @@ TArray<FInspectorObjectMetaData> FInspectorMetaDataHelper::GetMetaDataForUnreach
 			Result.Emplace(FInspectorObjectMetaData{ Entry.Value });
 		}
 	}
-
+#else
+	for (const auto & Entry : ConstPackage->GetMetaData().ObjectMetaDataMap)
+	{
+		if (!Entry.Key.IsValid( ))
+		{
+			Result.Emplace(FInspectorObjectMetaData{ Entry.Value });
+		}
+	}
+#endif
+	
 	return Result;
 }
 
@@ -99,19 +133,25 @@ void FInspectorMetaDataHelper::SetMetaData(const UObject* Object, const FName Ke
 {
 	if (!Object || Key.IsNone( )) return;
 	LastUsedKeys.Add(Key);
+#if UE_VERSION_OLDER_THAN(5, 6, 0)
 	Object->GetPackage( )->GetMetaData( )->SetValue(Object, Key, *Value);
+#else
+	Object->GetPackage( )->GetMetaData( ).SetValue(Object, Key, *Value);
+#endif
 }
 
 void FInspectorMetaDataHelper::RemoveMetaData(const UObject* Object, const FName Key)
 {
 	if (!Object || Key.IsNone( )) return;
-
+#if UE_VERSION_OLDER_THAN(5, 6, 0)
 	Object->GetPackage( )->GetMetaData( )->RemoveValue(Object, Key);
+#else
+	Object->GetPackage( )->GetMetaData( ).RemoveValue(Object, Key);
+#endif
 }
 
 FInspectorMetaSelector::FInspectorMetaSelector()
 {
-	FInspectorMetaDataHelper::RefreshMetaDataCollection();
 	for (const auto& Key : FInspectorMetaDataHelper::GetAvaliableMetaKeys())
 	{
 		SelectorKeys.Add(MakeShared<FName>(Key));
@@ -314,6 +354,7 @@ void SInspectorMetadataBlock::Construct(const FArguments& InArgs)
 			+ SHeaderRow::Column("Action").DefaultLabel(FText::FromString("Action")).FillWidth(0.2f)
 		)
 	];
+	FInspectorMetaDataHelper::RefreshMetaDataCollection();
 }
 
 void SInspectorMetadataBlock::BindObject(UObject* Object)
@@ -365,4 +406,5 @@ void SInspectorMetadataBlock::OnAddMetaRow(TSharedPtr<FMetaRow> Row)
 {
 	FInspectorMetaDataHelper::SetMetaData(TargetObject.Get(), Row->Key, Row->Value);
 	UpdateLayout();
+	FInspectorMetaDataHelper::RefreshMetaDataCollection();
 }
