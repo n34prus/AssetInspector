@@ -1,4 +1,6 @@
-﻿#include "InspectorObjectBlock.h"
+﻿// Copyright (c) 2026 Mikhail Kargin. All Rights Reserved.
+
+#include "InspectorObjectBlock.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/STableRow.h"
 #include "HAL/PlatformApplicationMisc.h"

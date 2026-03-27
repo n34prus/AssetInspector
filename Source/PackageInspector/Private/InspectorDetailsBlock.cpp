@@ -1,4 +1,6 @@
-﻿#include "InspectorDetailsBlock.h"
+﻿// Copyright (c) 2026 Mikhail Kargin. All Rights Reserved.
+
+#include "InspectorDetailsBlock.h"
 #include "PropertyEditorModule.h"
 #include "Modules/ModuleManager.h"
 

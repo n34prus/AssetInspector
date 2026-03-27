@@ -1,4 +1,6 @@
-﻿#include "InspectorGeneralWindow.h"
+﻿// Copyright (c) 2026 Mikhail Kargin. All Rights Reserved.
+
+#include "InspectorGeneralWindow.h"
 #include "InspectorSettingsBlock.h"
 #include "InspectorObjectBlock.h"
 #include "InspectorDetailsBlock.h"

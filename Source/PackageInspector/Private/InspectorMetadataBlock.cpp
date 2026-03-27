@@ -1,4 +1,6 @@
-﻿#include "InspectorMetadataBlock.h"
+﻿// Copyright (c) 2026 Mikhail Kargin. All Rights Reserved.
+
+#include "InspectorMetadataBlock.h"
 #include "Misc/EngineVersionComparison.h"
 
 TArray<FName> FInspectorMetaDataHelper::GetAvaliableMetaKeys()

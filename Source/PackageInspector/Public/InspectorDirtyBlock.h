@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright (c) 2026 Mikhail Kargin. All Rights Reserved.
+
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"

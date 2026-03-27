@@ -5,11 +5,12 @@
 	"FriendlyName": "PackageInspector",
 	"Description": "Editor for reflection system data for assets, packages",
 	"Category": "Tools",
-	"CreatedBy": "simona, n34prus",
+	"CreatedBy": "n34prus, danillissimo",
 	"CreatedByURL": "https://github.com/n34prus",
 	"DocsURL": "https://packageinspector.nicepage.io/",
 	"MarketplaceURL": "",
 	"SupportURL": "n34prus@gmail.com",
+    "EngineVersion": "5.5.0",
 	"CanContainContent": false,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
@@ -19,7 +20,10 @@
 		{
 			"Name": "PackageInspector",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
-		}
+			"LoadingPhase": "Default",
+            "PlatformAllowList": [
+              "Win64"
+            ]
+        }
 	]
 }

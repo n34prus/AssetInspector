@@ -1,4 +1,6 @@
-﻿#include "InspectorPackageBlock.h"
+﻿// Copyright (c) 2026 Mikhail Kargin. All Rights Reserved.
+
+#include "InspectorPackageBlock.h"
 
 #include "Components/SlateWrapperTypes.h"
 #include "Widgets/Text/STextBlock.h"

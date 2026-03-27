@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (c) 2026 Mikhail Kargin. All Rights Reserved.
 
 #pragma once
 

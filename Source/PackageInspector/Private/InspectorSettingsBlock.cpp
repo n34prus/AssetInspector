@@ -1,4 +1,6 @@
-﻿#include "InspectorSettingsBlock.h"
+﻿// Copyright (c) 2026 Mikhail Kargin. All Rights Reserved.
+
+#include "InspectorSettingsBlock.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/SBoxPanel.h"

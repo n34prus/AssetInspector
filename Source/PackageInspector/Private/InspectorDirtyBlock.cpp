@@ -1,4 +1,6 @@
-﻿#include "InspectorDirtyBlock.h"
+﻿// Copyright (c) 2026 Mikhail Kargin. All Rights Reserved.
+
+#include "InspectorDirtyBlock.h"
 
 void SInspectorDirtyStatusBlock::Construct(const FArguments& InArgs)
 {
